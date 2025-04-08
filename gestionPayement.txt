@@ -1,0 +1,264 @@
+Voici une implémentation détaillée des améliorations proposées pour votre système de commandes :
+
+### 1. Gestion des transactions MongoDB
+```typescript
+// controllers/order.controller.ts
+import mongoose from "mongoose";
+
+const createOrder = async (req: Request, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
+  try {
+    const { articles } = req.body;
+    let total = 0;
+    const articlesToUpdate = [];
+
+    // Vérification du stock
+    for (const item of articles) {
+      const article = await Article.findById(item.article).session(session);
+      if (article.stock < item.quantity) {
+        throw new Error(`Stock insuffisant pour ${article.name}`);
+      }
+      article.stock -= item.quantity;
+      articlesToUpdate.push(article.save({ session }));
+    }
+
+    // Création de la commande
+    const order = new Order({ ...req.body, total });
+    await order.save({ session });
+
+    await Promise.all(articlesToUpdate);
+    await session.commitTransaction();
+    
+    res.status(201).json(order);
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(400).json({ error: error.message });
+  } finally {
+    session.endSession();
+  }
+};
+```
+
+### 2. Système de notification
+```typescript
+// models/notification.model.ts
+const notificationSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
+  type: { type: String, enum: ['email', 'sms', 'in-app'] },
+  content: String,
+  read: { type: Boolean, default: false },
+  metadata: mongoose.Schema.Types.Mixed
+}, { timestamps: true });
+```
+
+```typescript
+// services/notification.service.ts
+import { sendEmail } from '../email-service';
+
+export const notifyOrderUpdate = async (order: OrderDocument) => {
+  // Notification utilisateur
+  await Notification.create({
+    user: order.user,
+    type: 'email',
+    content: `Votre commande #${order._id} est maintenant ${order.status}`
+  });
+
+  // Notification vendeur
+  await Notification.create({
+    vendor: order.vendor,
+    type: 'in-app',
+    content: `Nouvelle commande #${order._id} de ${order.user.name}`
+  });
+
+  // Email transactionnel
+  await sendEmail({
+    to: order.user.email,
+    subject: `Mise à jour commande #${order._id}`,
+    template: 'order-status-update',
+    data: { order }
+  });
+};
+```
+
+### 3. Logique de livraison/facturation
+```typescript
+// models/delivery.model.ts
+const deliverySchema = new mongoose.Schema({
+  order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  carrier: String,
+  trackingNumber: String,
+  status: {
+    type: String,
+    enum: ['pending', 'in-transit', 'delivered', 'returned'],
+    default: 'pending'
+  },
+  estimatedDelivery: Date,
+  actualDelivery: Date
+});
+```
+
+```typescript
+// services/invoice.service.ts
+import PDFDocument from 'pdfkit';
+
+export const generateInvoice = async (order: OrderDocument) => {
+  const doc = new PDFDocument();
+  const filename = `invoice_${order._id}.pdf`;
+  
+  doc.text(`Facture #${order._id}`, 50, 50);
+  doc.text(`Client: ${order.user.name}`);
+  order.articles.forEach((item, index) => {
+    doc.text(`${item.article.name} - ${item.quantity}x ${item.article.price}€`, 50, 100 + (30 * index));
+  });
+  
+  // Sauvegarde dans le stockage cloud
+  const buffer = await doc.pipe(fs.createWriteStream(filename));
+  await Order.findByIdAndUpdate(order._id, { invoice: filename });
+  return buffer;
+};
+```
+
+### 4. Gestion des retours et remboursements
+```typescript
+// models/return.model.ts
+const returnSchema = new mongoose.Schema({
+  order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+  reason: String,
+  status: {
+    type: String,
+    enum: ['requested', 'approved', 'rejected', 'refunded'],
+    default: 'requested'
+  },
+  refundAmount: Number,
+  restockItems: [{
+    article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
+    quantity: Number
+  }]
+});
+```
+
+```typescript
+// controllers/return.controller.ts
+export const processRefund = async (req: Request, res: Response) => {
+  const { returnId } = req.params;
+  
+  const returnRequest = await Return.findById(returnId)
+    .populate('order')
+    .populate('restockItems.article');
+
+  // Logique de remboursement
+  const refund = await stripe.refunds.create({
+    payment_intent: returnRequest.order.paymentIntentId,
+    amount: returnRequest.refundAmount
+  });
+
+  // Restockage
+  for (const item of returnRequest.restockItems) {
+    await Article.findByIdAndUpdate(item.article, {
+      $inc: { stock: item.quantity }
+    });
+  }
+
+  await Return.findByIdAndUpdate(returnId, { status: 'refunded' });
+  res.json({ success: true, refund });
+};
+```
+
+### 5. Webhooks pour paiements
+```typescript
+// routes/webhooks.ts
+import express from 'express';
+import stripeWebhook from '../services/stripe-webhook';
+
+const router = express.Router();
+
+router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      await handleSuccessfulPayment(event.data.object);
+      break;
+    case 'payment_intent.failed':
+      await handleFailedPayment(event.data.object);
+      break;
+  }
+
+  res.status(200).end();
+});
+
+const handleSuccessfulPayment = async (paymentIntent: Stripe.PaymentIntent) => {
+  const order = await Order.findOneAndUpdate(
+    { paymentIntentId: paymentIntent.id },
+    { status: 'paid' },
+    { new: true }
+  );
+  
+  await notifyOrderUpdate(order);
+};
+
+const handleFailedPayment = async (paymentIntent: Stripe.PaymentIntent) => {
+  await Order.findOneAndUpdate(
+    { paymentIntentId: paymentIntent.id },
+    { status: 'payment_failed' }
+  );
+};
+```
+
+### Bonnes pratiques supplémentaires :
+1. **Idempotence des webhooks** :
+```typescript
+const handleWebhook = async (event: Stripe.Event) => {
+  if (await isEventProcessed(event.id)) return;
+  
+  // Traiter l'événement...
+  await markEventAsProcessed(event.id);
+};
+```
+
+2. **Configuration des workers** (BullMQ) :
+```typescript
+// workers/notification.worker.ts
+const notificationQueue = new Queue('notifications');
+
+notificationQueue.process(async (job) => {
+  switch (job.data.type) {
+    case 'order_update':
+      await sendOrderNotification(job.data);
+      break;
+    case 'payment_reminder':
+      await sendPaymentReminder(job.data);
+      break;
+  }
+});
+```
+
+3. **Sécurité des données** :
+```typescript
+// middleware/encryption.ts
+import { encrypt } from '../utils/crypto';
+
+export const encryptPaymentData = (req: Request, res: Response, next: NextFunction) => {
+  if (req.body.paymentCard) {
+    req.body.paymentCard = encrypt(req.body.paymentCard);
+  }
+  next();
+};
+```
+
+Ces implémentations ajoutent une couche professionnelle à votre système en gérant :
+- La cohérence transactionnelle
+- Les communications multi-canaux
+- La traçabilité des livraisons
+- La conformité financière
+- L'intégration sécurisée avec les processeurs de paiement
+
+Chaque composant peut être étendu avec :
+- Des systèmes de file d'attente pour le traitement asynchrone
+- Des analyses de données en temps réel
+- Des intégrations API avec des transporteurs (UPS, FedEx)
+- Des tableaux de bord de suivi pour les utilisateurs et vendeurs
