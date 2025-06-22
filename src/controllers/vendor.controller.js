@@ -102,8 +102,9 @@ export const logout = (req, res) => {
 export const checkAuth = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.vendor._id).select("-password");
-    if (!vendor)
+    if (!vendor) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
     res
       .status(200)
       .json({ data: vendor, token: generatedToken(vendor._id, res) });
