@@ -19,18 +19,18 @@ export const signUp = async (req, res) => {
     ) {
       return res
         .status(400)
-        .json({ message: "Vous devez renseigner tous les champs" });
+        .json({ message: "Tous les champs sont obligatoires" });
     }
 
     const vendorExist = await Vendor.findOne({ email });
     if (vendorExist) {
-      return res.status(409).json({ message: "cet email est deja utiliser" });
+      return res.status(409).json({ message: "Cet email est déjà utilisé" });
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
     let imageUrl;
-    if (image) {
-      const uploadResponse = await cloudinary.uploader.upload(image);
+    if (profilePic) {
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
       imageUrl = uploadResponse.secure_url;
     }
 
@@ -45,15 +45,17 @@ export const signUp = async (req, res) => {
     });
 
     if (vendor) {
-      generatedToken(vendor._id, res);
+      const token = generatedToken(vendor._id, res);
       await vendor.save();
       return res.status(201).json({
-        message: "Cree avec succes",
+        message: "Créé avec succès",
         data: {
           name: vendor.name,
           email: vendor.email,
           address: vendor.address,
+          articles: vendor.articles,
         },
+        token,
       });
     }
   } catch (error) {
@@ -67,63 +69,45 @@ export const login = async (req, res) => {
   try {
     const vendorExist = await Vendor.findOne({ email });
     if (!vendorExist) {
-      return res.status(401).json({ message: "Utilisateur inextant" });
+      return res.status(401).json({ message: "Utilisateur inexistant" });
     }
 
     const verifyPassword = await bcrypt.compare(password, vendorExist.password);
     if (!verifyPassword) {
-      return res
-        .status(500)
-        .json({ message: "Invalide password ou n'existe pas" });
+      return res.status(401).json({ message: "Mot de passe invalide" });
     }
 
-    generatedToken(vendorExist._id, res);
+    const token = generatedToken(vendorExist._id, res);
     return res.status(200).json({
-      message: "Connecte avec succes",
+      message: "Connecté avec succès",
       data: { name: vendorExist.name, email: vendorExist.email },
+      token,
     });
   } catch (error) {
     console.log("ERROR, Internal server error", error.message);
-    return res.status(401).json({ message: "Internal server ERROR" });
+    return res.status(401).json({ message: "ERROR, Internal server error" });
   }
 };
 
 export const logout = (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
-    res.status(200).json({ message: "Deconnecte avec succes" });
+    res.status(200).json({ message: "Déconnecté avec succès" });
   } catch (error) {
-    console.log("ERROR server");
-    return res.status(401).json({ message: "ERROR, Internal server " });
+    console.log("ERROR server", error.message);
+    return res.status(401).json({ message: "ERROR, Internal server error" });
   }
 };
 
 export const checkAuth = async (req, res) => {
   try {
-    if (!req.vendor) {
-      return res.status(401).json({ message: "ERREUR authentification" });
-    }
-
-    return res.status(200).json(req.vendor);
+    const vendor = await Vendor.findById(req.vendor._id).select("-password");
+    if (!vendor)
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    res
+      .status(200)
+      .json({ data: vendor, token: generatedToken(vendor._id, res) });
   } catch (error) {
-    console.log("ERROR, Internal server", error.message);
-    return res.status(500).json({ message: "ERROR, CheckAuth. verify server" });
+    res.status(500).json({ message: "Erreur de vérification" });
   }
 };
-
-// export const getClient = async (req, res) => {
-//   try {
-//     const clients = await Vendor.find({ client: req.user._id }).sort({
-//       createdAt: -1,
-//     });
-
-//     if (!clients) {
-//       return res.status(401).json({ message: "Pas de client" });
-//     }
-
-//     return res.status(201).json({ data: clients });
-//   } catch (error) {
-//     console.log("ERROR, Can't get client", error.message);
-//     return res.status(500).json({ message: "ERROR server, Can't get client" });
-//   }
-// };

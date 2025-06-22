@@ -7,29 +7,33 @@ export const signUp = async (req, res) => {
   try {
     if (!name || !firstName || !email || !password || !address) {
       return res
-        .status(401)
+        .status(400)
         .json({ message: "Vous devez renseigner tous les champs" });
     }
 
-    const userExist = await User.findOne({ email: email });
+    const userExist = await User.findOne({ email });
     if (userExist) {
       return res.status(409).json({
-        message: "L'email exist deja, veuillez renseigner un email valide",
+        message: "L'email existe deja, veuillez renseigner un email valide",
       });
     }
 
     const hashPassword = await bcrypt.hash(password, 12);
     const user = await User.create({
-      ...req.body,
+      name,
+      firstName,
+      email,
       password: hashPassword,
+      address,
     });
 
     if (user) {
-      generatedToken(user._id, res);
+      const token = generatedToken(user._id, res);
       await user.save();
       return res.status(201).json({
         message: "Enregistre avec succes",
         data: { name: user.name, email: user.email },
+        token
       });
     }
   } catch (error) {
@@ -48,7 +52,8 @@ export const login = async (req, res) => {
         .status(401)
         .json({ message: "Vous devez renseigner tous les champs" });
     }
-    const user = await User.findOne({ email: email });
+
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({ message: "Utilisateur inexistant" });
     }
@@ -59,10 +64,11 @@ export const login = async (req, res) => {
         .status(401)
         .json({ message: "Erreur mot de passe ou n'existe pas" });
     }
-    generatedToken(user._id, res);
+    const token = generatedToken(user._id, res);
     return res.status(200).json({
       message: "connete avec succes",
       data: { name: user.name, email: user.email },
+      token
     });
   } catch (error) {
     console.log("ERROR server, can't connect", error.message);
@@ -82,26 +88,28 @@ export const logout = (req, res) => {
 
 export const checkAuthUser = async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Erreur d'authentification" });
-    }
-    return res.status(200).json(req.user);
+    const user = await User.findById(req.user._id).select("-password");
+    if (!user)
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    res.status(200).json(user);
   } catch (error) {
-    console.log("ERROR Authentificate", error.message);
-    return res
-      .status(500)
-      .json({ message: "ERROR server, can't authentificate" });
+    res.status(500).json({ message: "Erreur de vérification" });
   }
 };
 
 export const getMyArticle = async (req, res) => {
   try {
-    const myArticle = await User.find(req.article._id).sort({ createdAt: -1 });
+    const myArticle = await User.findById(req.user._id)
+      .populate({
+        path: "articles",
+        options: { sort: { createdAt: -1 } },
+      })
+      .select("-password");
     if (!myArticle) {
       return res.status(401).json({ message: "Aucun article" });
     }
 
-    return res.status(200).json({ data: myArticle });
+    return res.status(200).json({ data: myArticle.articles });
   } catch (error) {
     console.log("ERROR server", error.message);
     return res.status(500).json({ message: "ERROR server, can't get article" });

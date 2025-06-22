@@ -1,17 +1,11 @@
 import { Article } from "../models/article.model.js";
+import { Vendor } from "../models/vendor.model.js";
+import { generatedToken } from "../utils/createToken.js";
 
 export const addArticle = async (req, res) => {
-  const { name, price, details, category, stock, image, vendor } = req.body;
+  const { name, price, details, category, stock, image } = req.body;
   try {
-    if (
-      !name ||
-      !price ||
-      !details ||
-      !category ||
-      !stock ||
-      !image ||
-      !vendor
-    ) {
+    if (!name || !price || !details || !category || !stock || !image) {
       return res
         .status(401)
         .json({ message: "Vous devez renseigner tous les champs" });
@@ -27,14 +21,17 @@ export const addArticle = async (req, res) => {
       vendor: req.vendor._id,
     });
 
-    // Formatage de la réponse avec les infos du vendeur
+    const vendor = await Vendor.findById(req.vendor._id);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendeur non trouver" });
+    }
+
     const responseData = {
       ...article.toObject(),
       vendor: {
-        _id: req.vendor._id,
-        name: req.vendor.name,
-        email: req.vendor.email,
-        number: req.vendor.number,
+        _id: vendor._id,
+        name: vendor.name,
+        email: vendor.email,
       },
     };
 
@@ -50,27 +47,39 @@ export const addArticle = async (req, res) => {
 
 export const getVendorArticle = async (req, res) => {
   try {
-    const article = await Article.find({ vendor: req.vendor._id })
-      .populate("vendor", "name") // Ajouter cette ligne
+    const articles = await Article.find({
+      vendor: req.vendor._id
+    })
+      .populate("vendor", "name email")
       .sort({ createdAt: -1 });
-
-    if (!article) {
-      return res
-        .status(401)
-        .json({ message: "Aucun article trouve ou inexistant" });
+    
+    if (!articles || articles.length === 0) {
+      return res.status(404).json({ message: "Aucun article trouvé pour ce vendeur" });
     }
 
-    return res.status(200).json({ data: article });
+    const responseData = articles.map((article) => ({
+      ...article.toObject(),
+      vendor: {
+        _id: article.vendor._id,
+        name: article.vendor.name,
+        email: article.vendor.email,
+      },
+    }));
+
+    return res.status(200).json({
+      message: "Articles du vendeur récupérés avec succès",
+      data: responseData
+    })
   } catch (error) {
-    console.log("ERROR server, can't get article", error.message);
-    return res.status(500).json({ message: "ERROR server, can't get article" });
+    console.error("Erreur serveur:", error.message);
+    return res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
 export const getArticle = async (req, res) => {
   try {
     const article = await Article.find({})
-      .populate("vendor", "name") // Ajouter cette ligne
+      .populate("vendor", "name")
       .sort({ createdAt: -1 });
     if (!article) {
       return res.status(401).json({ message: "Aucun article trouve" });

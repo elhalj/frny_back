@@ -6,14 +6,13 @@ export const generatedToken = (userId, res) => {
     algorithm: "HS256",
   });
 
-  const cookiesOption = {
+  res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    secure: process.env.NODE_ENV === "production",
+    // sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    // secure: process.env.NODE_ENV === "production",
     // domain: process.env.NODE_ENV === "production" ? ".votre-domaine.com" : undefined,
-  };
+  });
 
-  res.cookie("jwt", token, cookiesOption);
   return token;
 };
