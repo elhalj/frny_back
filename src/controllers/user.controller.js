@@ -1,15 +1,34 @@
+import cloudinary from "../lib/cloudinary.js";
 import { User } from "../models/user.model.js";
 import { generatedToken } from "../utils/createToken.js";
 import bcrypt from "bcryptjs";
 
 export const signUp = async (req, res) => {
-  const { name, firstName, email, password, address } = req.body;
+  const {
+    name,
+    firstName,
+    email,
+    password,
+    address,
+    city,
+    municipality,
+    street,
+  } = req.body;
   try {
-    if (!name || !firstName || !email || !password || !address) {
-      return res
-        .status(400)
-        .json({ message: "Vous devez renseigner tous les champs" });
-    }
+    // if (
+    //   !name ||
+    //   !firstName ||
+    //   !email ||
+    //   !password ||
+    //   !address ||
+    //   !city ||
+    //   !municipality ||
+    //   !street
+    // ) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Vous devez renseigner tous les champs" });
+    // }
 
     const userExist = await User.findOne({ email });
     if (userExist) {
@@ -19,12 +38,21 @@ export const signUp = async (req, res) => {
     }
 
     const hashPassword = await bcrypt.hash(password, 12);
+    let imageUrl;
+    if (req.file) {
+      const uploadResponse = await cloudinary.uploader.upload(req.file.path);
+      imageUrl = uploadResponse.secure_url;
+    }
     const user = await User.create({
       name,
       firstName,
       email,
       password: hashPassword,
       address,
+      city,
+      municipality,
+      street,
+      image: imageUrl,
     });
 
     if (user) {
@@ -33,14 +61,14 @@ export const signUp = async (req, res) => {
       return res.status(201).json({
         message: "Enregistre avec succes",
         data: { name: user.name, email: user.email },
-        token
+        token,
       });
     }
   } catch (error) {
     console.log("ERROR, Can't signUp", error.message);
-    return res
-      .status(500)
-      .json({ message: "ERROR server, Internal server error" });
+    return res.status(500).json({
+      message: "ERROR server, Internal server error" + error.message,
+    });
   }
 };
 
@@ -68,7 +96,7 @@ export const login = async (req, res) => {
     return res.status(200).json({
       message: "connete avec succes",
       data: { name: user.name, email: user.email },
-      token
+      token,
     });
   } catch (error) {
     console.log("ERROR server, can't connect", error.message);

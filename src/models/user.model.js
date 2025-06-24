@@ -19,10 +19,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    address: {
-      city: String,
-      municipality: String,
-      street: String,
+    address: { type: String },
+    city: { type: String },
+    municipality: { type: String },
+    street: { type: String },
+    image: {
+      type: String,
+      default: "https://i.imgur.com/4M8bQ2H.png",
     },
   },
   { timestamps: true }
