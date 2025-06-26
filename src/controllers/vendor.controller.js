@@ -13,9 +13,12 @@ export const signUp = async (req, res) => {
       !firstName ||
       !email ||
       !password ||
-      !address ||
       !gender ||
-      !profilePic
+      !profilePic ||
+      !address ||
+      !city ||
+      !municipality ||
+      !number
     ) {
       return res
         .status(400)
@@ -39,9 +42,12 @@ export const signUp = async (req, res) => {
       firstName,
       email,
       password: hashPassword,
-      address,
       gender,
       profilePic: imageUrl,
+      address,
+      city,
+      municipality,
+      number,
     });
 
     if (vendor) {

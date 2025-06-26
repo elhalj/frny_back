@@ -20,19 +20,18 @@ const vendorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    address: {
-      city: {
-        type: String,
-        required: true,
-      },
-      municipality: {
-        type: String,
-        required: true,
-      },
-      number: {
-        type: String,
-        required: true,
-      },
+    address: { type: String, required: true },
+    city: {
+      type: String,
+      required: true,
+    },
+    municipality: {
+      type: String,
+      required: true,
+    },
+    number: {
+      type: String,
+      required: true,
     },
     gender: {
       type: String,
