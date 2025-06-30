@@ -6,10 +6,11 @@ import {
   signUp,
 } from "../controllers/vendor.controller.js";
 import { protectVendorRoute } from "../middleware/protectRoute.js";
+import { upload } from "../lib/upload.js";
 
 export const vendorRoutes = express.Router();
 
-vendorRoutes.post("/signUp", signUp);
+vendorRoutes.post("/signUp", upload.single("profilePic"), signUp);
 vendorRoutes.post("/login", login);
 vendorRoutes.post("/logout", logout);
 

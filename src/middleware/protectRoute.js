@@ -6,7 +6,7 @@ export const protectVendorRoute = async (req, res, next) => {
 
   if (
     req.headers.authorization &&
-    req.hearders.authorization.startsWith("Bearer")
+    req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
   } else if (
@@ -24,7 +24,7 @@ export const protectVendorRoute = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const vendor = await Vendor.findById(decoded.vendor.id).select("-password");
+    const vendor = await Vendor.findById(decoded.vendorId).select("-password");
 
     req.vendor = vendor;
     next();
