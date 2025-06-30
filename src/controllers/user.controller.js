@@ -75,6 +75,7 @@ export const signUp = async (req, res) => {
     console.log("ERROR, Can't signUp", error.message);
     return res.status(500).json({
       message: "ERROR server, Internal server error",
+      message: "ERROR server, Internal server error" + error.message,
     });
   }
 };
