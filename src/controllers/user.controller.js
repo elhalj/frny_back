@@ -40,8 +40,15 @@ export const signUp = async (req, res) => {
     const hashPassword = await bcrypt.hash(password, 12);
     let imageUrl;
     if (req.file) {
-      const uploadResponse = await cloudinary.uploader.upload(req.file.path);
-      imageUrl = uploadResponse.secure_url;
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(req.file.path);
+        imageUrl = uploadResponse.secure_url;
+      } catch (err) {
+        return res.status(502).json({
+          message: "Erreur lors du téléchargement de l'image sur Cloudinary.",
+          error: err.message || err.toString(),
+        });
+      }
     }
     const user = await User.create({
       name,
@@ -67,6 +74,7 @@ export const signUp = async (req, res) => {
   } catch (error) {
     console.log("ERROR, Can't signUp", error.message);
     return res.status(500).json({
+      message: "ERROR server, Internal server error",
       message: "ERROR server, Internal server error" + error.message,
     });
   }

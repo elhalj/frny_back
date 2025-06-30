@@ -10,19 +10,31 @@ export const addArticle = async (req, res) => {
         .status(401)
         .json({ message: "Vous devez renseigner tous les champs" });
     }
-
+    let imageUrl;
+    if (req.file) {
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(req.file.path);
+        imageUrl = uploadResponse.secure_url;
+      } catch (err) {
+        return res.status(502).json({
+          message: "Erreur lors du téléchargement de l'image sur Cloudinary.",
+          error: err.message || err.toString(),
+        });
+      }
+    }
     const article = await Article.create({
       name,
       price,
       details,
       category,
       stock,
-      image,
+      image: imageUrl || image,
       vendor: req.vendor._id,
     });
 
     const vendor = await Vendor.findById(req.vendor._id);
     if (!vendor) {
+      console.log("Vendeur non trouver");
       return res.status(404).json({ message: "Vendeur non trouver" });
     }
 
@@ -47,14 +59,14 @@ export const addArticle = async (req, res) => {
 
 export const getVendorArticle = async (req, res) => {
   try {
-    const articles = await Article.find({
-      vendor: req.vendor._id
-    })
+    const articles = await Article.find({ vendor: req.vendor._id })
       .populate("vendor", "name email")
       .sort({ createdAt: -1 });
-    
-    if (!articles || articles.length === 0) {
-      return res.status(404).json({ message: "Aucun article trouvé pour ce vendeur" });
+
+    if (!articles.length) {
+      return res
+        .status(404)
+        .json({ message: "Aucun article trouvé pour ce vendeur" });
     }
 
     const responseData = articles.map((article) => ({
@@ -68,8 +80,8 @@ export const getVendorArticle = async (req, res) => {
 
     return res.status(200).json({
       message: "Articles du vendeur récupérés avec succès",
-      data: responseData
-    })
+      data: responseData,
+    });
   } catch (error) {
     console.error("Erreur serveur:", error.message);
     return res.status(500).json({ message: "Erreur serveur" });

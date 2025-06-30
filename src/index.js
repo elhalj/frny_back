@@ -31,10 +31,7 @@ app.use("/api/vendor", vendorRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/article", articleRoutes);
 app.use("/api/commande", commandeRoutes);
-app.use(
-  "upload/",
-  express.static(path.join(__dirname, "/backend/src/uploads"))
-);
+app.use("/upload", express.static(path.join(__dirname, "/backend/src/upload")));
 // app.use("upload/", uploadMiddleware);
 
 app.listen(port, () => {
