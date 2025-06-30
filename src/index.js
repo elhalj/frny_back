@@ -9,7 +9,7 @@ import { vendorRoutes } from "./routes/vendor.routes.js";
 import { userRoutes } from "./routes/user.routes.js";
 import { articleRoutes } from "./routes/article.routes.js";
 import commandeRoutes from "./routes/commande.routes.js";
-import { uploadMiddleware } from "./utils/upload.js";
+// import { uploadMiddleware } from "./utils/upload.js";
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -31,7 +31,7 @@ app.use("/api/vendor", vendorRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/article", articleRoutes);
 app.use("/api/commande", commandeRoutes);
-app.use("/upload", express.static(path.join(__dirname, "/backend/src/upload")));
+// app.use("/upload", express.static(path.join(__dirname, "../upload")));
 // app.use("upload/", uploadMiddleware);
 
 app.listen(port, () => {

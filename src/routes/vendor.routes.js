@@ -10,7 +10,7 @@ import { upload } from "../lib/upload.js";
 
 export const vendorRoutes = express.Router();
 
-vendorRoutes.post("/signUp", upload.single("profilePic"), signUp);
+vendorRoutes.post("/signUp", /*upload.single("profilePic"),*/ signUp);
 vendorRoutes.post("/login", login);
 vendorRoutes.post("/logout", logout);
 

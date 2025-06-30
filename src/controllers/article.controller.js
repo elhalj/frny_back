@@ -46,7 +46,7 @@ export const addArticle = async (req, res) => {
         email: vendor.email,
       },
     };
-
+    console.log("Article ajouté avec succès", responseData);
     res.status(201).json({
       message: "Article ajouté avec succès",
       data: responseData,
