@@ -32,12 +32,6 @@ export const addArticle = async (req, res) => {
       vendor: req.vendor._id,
     });
 
-    const vendor = await Vendor.findById(req.vendor._id);
-    if (!vendor) {
-      console.log("Vendeur non trouver");
-      return res.status(404).json({ message: "Vendeur non trouver" });
-    }
-
     const responseData = {
       ...article.toObject(),
       vendor: {

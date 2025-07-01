@@ -15,16 +15,21 @@ export const protectVendorRoute = async (req, res, next) => {
   ) {
     token = req.cookies.token;
   }
-  // Vérifier si le token existe
+
   if (!token) {
     return res
       .status(401)
       .json({ message: "Unauthorized - No token provided" });
   }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const vendor = await Vendor.findById(decoded.vendorId).select("-password");
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
 
     req.vendor = vendor;
     next();
