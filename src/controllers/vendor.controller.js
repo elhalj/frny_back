@@ -1,8 +1,8 @@
 // import { User } from "../models/user.model";
 import cloudinary from "../lib/cloudinary.js";
 import { Vendor } from "../models/vendor.model.js";
-import { generatedToken } from "../utils/createToken.js";
 import bcrypt from "bcryptjs";
+import { generatedVendorToken } from "../utils/createToken.js";
 
 export const signUp = async (req, res) => {
   const { name, firstName, email, password, address, gender, profilePic } =
@@ -51,7 +51,7 @@ export const signUp = async (req, res) => {
     });
 
     if (vendor) {
-      const token = generatedToken(vendor._id, res);
+      const token = generatedVendorToken(vendor._id, res);
       await vendor.save();
       return res.status(201).json({
         message: "Créé avec succès",
@@ -83,7 +83,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Mot de passe invalide" });
     }
 
-    const token = generatedToken(vendorExist._id, res);
+    const token = generatedVendorToken(vendorExist._id, res);
     return res.status(200).json({
       message: "Connecté avec succès",
       data: { name: vendorExist.name, email: vendorExist.email },
@@ -97,7 +97,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
+    res.cookie("token", "", { maxAge: 0 });
     res.status(200).json({ message: "Déconnecté avec succès" });
   } catch (error) {
     console.log("ERROR server", error.message);
@@ -113,7 +113,7 @@ export const checkAuth = async (req, res) => {
     }
     res
       .status(200)
-      .json({ data: vendor, token: generatedToken(vendor._id, res) });
+      .json({ data: vendor, token: generatedVendorToken(vendor._id, res) });
   } catch (error) {
     res.status(500).json({ message: "Erreur de vérification" });
   }

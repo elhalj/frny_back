@@ -9,6 +9,7 @@ import { vendorRoutes } from "./routes/vendor.routes.js";
 import { userRoutes } from "./routes/user.routes.js";
 import { articleRoutes } from "./routes/article.routes.js";
 import commandeRoutes from "./routes/commande.routes.js";
+import uploadRoute from "./routes/uploadImage.routes.js";
 // import { uploadMiddleware } from "./utils/upload.js";
 
 dotenv.config();
@@ -31,8 +32,8 @@ app.use("/api/vendor", vendorRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/article", articleRoutes);
 app.use("/api/commande", commandeRoutes);
-// app.use("/upload", express.static(path.join(__dirname, "../upload")));
-// app.use("upload/", uploadMiddleware);
+app.use("/api", uploadRoute);
+app.use("/upload", express.static(path.join(__dirname, "../upload")));
 
 app.listen(port, () => {
   console.log(`server running on port http://localhost:${port}`);

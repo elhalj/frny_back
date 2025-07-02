@@ -113,7 +113,7 @@ export const login = async (req, res) => {
 
 export const logout = (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
+    res.cookie("token", "", { maxAge: 0 });
     return res.status(201).json({ message: "Deconnecte avec succes" });
   } catch (error) {
     console.log("ERROR server", error.message);

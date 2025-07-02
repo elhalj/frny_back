@@ -10,28 +10,17 @@ export const addArticle = async (req, res) => {
         .status(401)
         .json({ message: "Vous devez renseigner tous les champs" });
     }
-    let imageUrl;
-    if (req.file) {
-      try {
-        const uploadResponse = await cloudinary.uploader.upload(req.file.path);
-        imageUrl = uploadResponse.secure_url;
-      } catch (err) {
-        return res.status(502).json({
-          message: "Erreur lors du téléchargement de l'image sur Cloudinary.",
-          error: err.message || err.toString(),
-        });
-      }
-    }
+
     const article = await Article.create({
       name,
       price,
       details,
       category,
       stock,
-      image: imageUrl || image,
+      image,
       vendor: req.vendor._id,
     });
-
+    const vendor = await Vendor.findById(req.vendor._id).select("-password");
     const responseData = {
       ...article.toObject(),
       vendor: {
