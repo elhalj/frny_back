@@ -75,7 +75,6 @@ export const signUp = async (req, res) => {
     console.log("ERROR, Can't signUp", error.message);
     return res.status(500).json({
       message: "ERROR server, Internal server error",
-      message: "ERROR server, Internal server error" + error.message,
     });
   }
 };
@@ -114,7 +113,7 @@ export const login = async (req, res) => {
 
 export const logout = (req, res) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
+    res.cookie("token", "", { maxAge: 0 });
     return res.status(201).json({ message: "Deconnecte avec succes" });
   } catch (error) {
     console.log("ERROR server", error.message);

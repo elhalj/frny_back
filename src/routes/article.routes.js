@@ -7,14 +7,14 @@ import {
   getVendorArticle,
   updated,
 } from "../controllers/article.controller.js";
-import { upload } from "../lib/upload.js";
+// import { upload } from "../lib/upload.js";
 
 export const articleRoutes = express.Router();
 
 articleRoutes.post(
   "/add",
   protectVendorRoute,
-  upload.single("image"),
+  /*upload.single("image"),*/
   addArticle
 );
 articleRoutes.get("/getArticle/me", protectVendorRoute, getVendorArticle);

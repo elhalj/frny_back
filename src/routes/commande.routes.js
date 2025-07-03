@@ -6,8 +6,8 @@ import { protectVendorRoute } from "../middleware/protectRoute.js";
 const commandeRoutes = express.Router();
 
 // Routes client
-commandeRoutes.post("/", protectRoute, OrderController.createOrder);
-commandeRoutes.get("/user", protectRoute, OrderController.getUserOrders);
+commandeRoutes.post("/user/create", protectRoute, OrderController.createOrder);
+commandeRoutes.get("/user/get", protectRoute, OrderController.getUserOrders);
 
 // Routes vendeur
 commandeRoutes.get(
