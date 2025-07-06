@@ -7,7 +7,7 @@ const articleSchema = new mongoose.Schema(
       required: true,
     },
     price: {
-      type: Number,
+      type: String,
       required: true,
     },
     details: {
@@ -19,7 +19,7 @@ const articleSchema = new mongoose.Schema(
       required: true,
     },
     stock: {
-      type: Number,
+      type: String,
       required: true,
     },
     rate: {

@@ -40,7 +40,6 @@ const vendorSchema = new mongoose.Schema(
     },
     profilePic: {
       type: String,
-      required: true,
     },
     // articles: [
     //   {
