@@ -16,7 +16,7 @@ export const signUp = async (req, res) => {
     number,
     gender,
   } = req.body;
-  const profilePic = req.file;
+
   try {
     if (
       !name ||
@@ -34,19 +34,20 @@ export const signUp = async (req, res) => {
         .json({ message: "Tous les champs sont obligatoires" });
     }
 
+    const file = req.file;
+    let imageUrl;
+    if (!file) {
+      return res.status(400).json({ message: "Aucune image fournie" });
+    } else {
+      imageUrl = req.file.filename;
+    }
+
     const vendorExist = await Vendor.findOne({ email });
     if (vendorExist) {
       return res.status(409).json({ message: "Cet email est déjà utilisé" });
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
-    let imageUrl;
-    if (profilePic) {
-      const uploadResponse = await cloudinary.uploader.upload(profilePic.path);
-      imageUrl = uploadResponse.secure_url;
-    } else {
-      return res.status(400).json({ message: "Image de profil manquante" });
-    }
 
     const vendor = await Vendor.create({
       name,

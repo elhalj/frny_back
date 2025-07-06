@@ -41,6 +41,22 @@ app.use(
     },
   })
 );
+app.use(
+  "/uploads/admin",
+  express.static(path.join(__dirname, "../upload/admin"), {
+    setHeaders: (res) => {
+      res.set("Cache-Control", "public, max-age=31536000");
+    },
+  })
+);
+app.use(
+  "/uploads/users",
+  express.static(path.join(__dirname, "../upload/users"), {
+    setHeaders: (res) => {
+      res.set("Cache-Control", "public, max-age=31536000");
+    },
+  })
+);
 
 app.listen(port, () => {
   console.log(`server running on port http://localhost:${port}`);
