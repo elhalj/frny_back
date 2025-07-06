@@ -6,25 +6,30 @@ const uploadRoute = express.Router();
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-uploadRoute.post("/upload", upload.single("image"), async (req, res) => {
+
+const uploadImage = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "Not image given" });
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: "No image provided" });
     }
-    //Convert the Buffer in base64
-    const b64 = Buffer.from(req.file.buffer).toString("base64");
-    const dataUri = `data:${req.file.mimetype};base64,${b64}`;
+    if (!file.mimetype.startsWith("image/")) {
+      return res.status(400).json({ message: "File is not an image" });
+    }
+    const b64 = Buffer.from(file.buffer).toString("base64");
+    const dataUri = `data:${file.mimetype};base64,${b64}`;
 
-    //Upload to Cloudinary
-    const uploadResponse = cloudinary.uploader.upload(dataUri, {
-      folder: "articles",
-    });
+    const uploadResponse = await cloudinary.uploader.upload(dataUri);
+    console.log("Image uploaded successfully:", uploadResponse.secure_url);
 
-    res.status(200).json({ url: uploadResponse.secure_url });
+    res.status(201).json({ url: uploadResponse.secure_url });
   } catch (error) {
-    console.error("Erreur d'upload:", error);
-    res.status(500).json({ error: "Échec de l'upload de l'image" });
+    console.error("Erreur d'upload:", error?.message || "Inconnue");
+    res.status(500).json({ error: "Failed to upload image" });
   }
-});
+};
+
+uploadRoute.post("/upload", upload.single("image"), uploadImage);
 
 export default uploadRoute;

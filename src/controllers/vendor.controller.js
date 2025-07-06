@@ -5,8 +5,18 @@ import bcrypt from "bcryptjs";
 import { generatedVendorToken } from "../utils/createToken.js";
 
 export const signUp = async (req, res) => {
-  const { name, firstName, email, password, address, gender, profilePic } =
-    req.body;
+  const {
+    name,
+    firstName,
+    email,
+    password,
+    address,
+    city,
+    municipality,
+    number,
+    gender,
+  } = req.body;
+
   try {
     if (
       !name ||
@@ -14,7 +24,6 @@ export const signUp = async (req, res) => {
       !email ||
       !password ||
       !gender ||
-      !profilePic ||
       !address ||
       !city ||
       !municipality ||
@@ -25,17 +34,20 @@ export const signUp = async (req, res) => {
         .json({ message: "Tous les champs sont obligatoires" });
     }
 
+    const file = req.file;
+    let imageUrl;
+    if (!file) {
+      return res.status(400).json({ message: "Aucune image fournie" });
+    } else {
+      imageUrl = req.file.filename;
+    }
+
     const vendorExist = await Vendor.findOne({ email });
     if (vendorExist) {
       return res.status(409).json({ message: "Cet email est déjà utilisé" });
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
-    let imageUrl;
-    if (profilePic) {
-      const uploadResponse = await cloudinary.uploader.upload(profilePic);
-      imageUrl = uploadResponse.secure_url;
-    }
 
     const vendor = await Vendor.create({
       name,

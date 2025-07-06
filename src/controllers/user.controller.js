@@ -29,6 +29,7 @@ export const signUp = async (req, res) => {
     //     .status(400)
     //     .json({ message: "Vous devez renseigner tous les champs" });
     // }
+    const file = req.file;
 
     const userExist = await User.findOne({ email });
     if (userExist) {
@@ -38,18 +39,14 @@ export const signUp = async (req, res) => {
     }
 
     const hashPassword = await bcrypt.hash(password, 12);
+
     let imageUrl;
-    if (req.file) {
-      try {
-        const uploadResponse = await cloudinary.uploader.upload(req.file.path);
-        imageUrl = uploadResponse.secure_url;
-      } catch (err) {
-        return res.status(502).json({
-          message: "Erreur lors du téléchargement de l'image sur Cloudinary.",
-          error: err.message || err.toString(),
-        });
-      }
+    if (!file) {
+      return res.status(400).json({ message: "Aucune image fournie" });
+    } else {
+      imageUrl = req.file.filename;
     }
+
     const user = await User.create({
       name,
       firstName,

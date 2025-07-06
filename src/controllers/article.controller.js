@@ -3,12 +3,20 @@ import { Vendor } from "../models/vendor.model.js";
 import { generatedToken } from "../utils/createToken.js";
 
 export const addArticle = async (req, res) => {
-  const { name, price, details, category, stock, image } = req.body;
+  const { name, price, details, category, stock } = req.body;
   try {
-    if (!name || !price || !details || !category || !stock || !image) {
+    if (!name || !price || !details || !category || !stock) {
       return res
-        .status(401)
+        .status(400)
         .json({ message: "Vous devez renseigner tous les champs" });
+    }
+
+    const file = req.file;
+    let imageUrl;
+    if (!file) {
+      return res.status(400).json({ message: "Aucune image fournie" });
+    } else {
+      imageUrl = req.file.filename;
     }
 
     const article = await Article.create({
@@ -17,7 +25,7 @@ export const addArticle = async (req, res) => {
       details,
       category,
       stock,
-      image,
+      image: imageUrl,
       vendor: req.vendor._id,
     });
     const vendor = await Vendor.findById(req.vendor._id).select("-password");
@@ -77,7 +85,7 @@ export const getArticle = async (req, res) => {
       .populate("vendor", "name")
       .sort({ createdAt: -1 });
     if (!article) {
-      return res.status(401).json({ message: "Aucun article trouve" });
+      return res.status(404).json({ message: "Aucun article trouve" });
     }
     return res.status(200).json({ data: article });
   } catch (error) {
@@ -90,7 +98,7 @@ export const updated = async (req, res) => {
   try {
     const article = await Article.findById(req.params.id);
     if (!article) {
-      return res.status(401).json({ message: "Article non trouve" });
+      return res.status(404).json({ message: "Article non trouve" });
     }
 
     if (article.vendor.toString() !== req.vendor._id.toString()) {
@@ -105,7 +113,7 @@ export const updated = async (req, res) => {
       { new: true, runValidators: true }
     );
     return res
-      .status(201)
+      .status(200)
       .json({ message: "Modifie avec succes", data: updated });
   } catch (error) {
     console.log("ERROR server, can't update", error.message);
@@ -117,7 +125,7 @@ export const deleted = async (req, res) => {
   try {
     const article = await Article.findById(req.params.id);
     if (!article) {
-      return res.status(401).json({ message: "Article non trouve" });
+      return res.status(404).json({ message: "Article non trouve" });
     }
 
     if (article.vendor.toString() !== req.vendor._id.toString()) {
@@ -128,7 +136,7 @@ export const deleted = async (req, res) => {
 
     await article.deleteOne({ _id: req.params.id });
     return res
-      .status(201)
+      .status(200)
       .json({ message: "Supprimer avec succes", data: article });
   } catch (error) {
     console.log("ERROR server, can't delete", error.message);

@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const uploadDir = path.resolve(__dirname, "../../upload/articles/"); // Chemin absolu
+const uploadDir = path.resolve(__dirname, "../../upload/admin/"); // Chemin absolu
 
 fs.mkdir(uploadDir, { recursive: true }, (err) => {
   if (err) {
@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSurfix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "article-" + uniqueSurfix + path.extname(file.originalname));
+    cb(null, "admin-" + uniqueSurfix + path.extname(file.originalname));
   },
 });
 const upload = multer({
@@ -38,4 +38,4 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, //5MB
 });
 
-export const uploadArticleImage = upload.single("image");
+export const uploadAdminImage = upload.single("profilePic");
