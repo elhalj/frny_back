@@ -9,8 +9,6 @@ import { vendorRoutes } from "./routes/vendor.routes.js";
 import { userRoutes } from "./routes/user.routes.js";
 import { articleRoutes } from "./routes/article.routes.js";
 import commandeRoutes from "./routes/commande.routes.js";
-// import uploadRoute from "./routes/uploadImage.routes.js";
-// import multer from "multer";
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);

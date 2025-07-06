@@ -28,7 +28,6 @@ export const addArticle = async (req, res) => {
       image: imageUrl,
       vendor: req.vendor._id,
     });
-
     const vendor = await Vendor.findById(req.vendor._id).select("-password");
     const responseData = {
       ...article.toObject(),
