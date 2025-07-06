@@ -12,7 +12,7 @@ const upload = multer({ dest: "uploads" });
 
 export const vendorRoutes = express.Router();
 
-vendorRoutes.post("/signUp", upload.single("profilePic"), signUp);
+vendorRoutes.post("/signUp", /*upload.single("profilePic"),*/ signUp);
 vendorRoutes.post("/login", login);
 vendorRoutes.post("/logout", logout);
 
